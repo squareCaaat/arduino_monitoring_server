@@ -1,0 +1,14 @@
+{
+  "name": "ardu-local-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local WebSocket monitoring server for Arduino data",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.0"
+  }
+}
