@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket 모니터링</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #0f1115;
+        color: #e6e6e6;
+      }
+      header {
+        padding: 16px 20px;
+        background: #151922;
+        border-bottom: 1px solid #202534;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .status {
+        font-weight: 600;
+      }
+      .status.connected {
+        color: #76f29b;
+      }
+      .status.disconnected {
+        color: #ff8f8f;
+      }
+      main {
+        padding: 16px 20px 24px;
+      }
+      .log {
+        background: #0b0e14;
+        border: 1px solid #1e2433;
+        border-radius: 8px;
+        padding: 12px;
+        height: 70vh;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 13px;
+      }
+      .log-line {
+        margin-bottom: 8px;
+      }
+      .log-line.info {
+        color: #c9d4ff;
+      }
+      .log-line.error {
+        color: #ff9d9d;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div>로컬 WebSocket 모니터링</div>
+      <div id="status" class="status disconnected">disconnected</div>
+    </header>
+    <main>
+      <div id="log" class="log" aria-live="polite"></div>
+    </main>
+    <script>
+      const statusEl = document.getElementById("status");
+      const logEl = document.getElementById("log");
+
+      function setStatus(connected) {
+        statusEl.textContent = connected ? "connected" : "disconnected";
+        statusEl.className = `status ${connected ? "connected" : "disconnected"}`;
+      }
+
+      function appendLog(text, level = "info") {
+        const line = document.createElement("div");
+        line.className = `log-line ${level}`;
+        line.textContent = text;
+        logEl.appendChild(line);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      function connect() {
+        const protocol = location.protocol === "https:" ? "wss" : "ws";
+        const wsUrl = `${protocol}://${location.host}/ws?role=monitor`;
+        const socket = new WebSocket(wsUrl);
+
+        socket.addEventListener("open", () => {
+          setStatus(true);
+          appendLog("monitor connected");
+        });
+
+        socket.addEventListener("close", () => {
+          setStatus(false);
+          appendLog("monitor disconnected", "error");
+          setTimeout(connect, 1500);
+        });
+
+        socket.addEventListener("error", () => {
+          appendLog("socket error", "error");
+        });
+
+        socket.addEventListener("message", (event) => {
+          let payload = null;
+          try {
+            payload = JSON.parse(event.data);
+          } catch (error) {
+            appendLog(event.data);
+            return;
+          }
+
+          if (payload && payload.type === "log") {
+            const time = new Date(payload.timestamp).toLocaleTimeString();
+            const meta = payload.meta ? ` ${JSON.stringify(payload.meta)}` : "";
+            appendLog(`[${time}] ${payload.message}${meta}`, payload.level);
+          } else {
+            appendLog(event.data);
+          }
+        });
+      }
+
+      connect();
+    </script>
+  </body>
+</html>
