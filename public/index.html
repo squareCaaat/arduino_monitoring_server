@@ -228,16 +228,28 @@
     <main>
       <!-- 모니터링 패널 그리드 -->
       <div class="monitoring-grid">
-        <!-- 모터 패널 -->
-        <div class="panel" id="motor-panel">
+        <!-- 모터 Left 패널 -->
+        <div class="panel" id="motor-left-panel">
           <div class="panel-header">
             <div class="panel-title">
-              <span class="icon motor">M</span>
-              모터 모니터링
+              <span class="icon motor">L</span>
+              모터 (Left)
             </div>
-            <div class="panel-timestamp" id="motor-timestamp">--</div>
+            <div class="panel-timestamp" id="motor-left-timestamp">--</div>
           </div>
-          <div id="motor-content" class="no-data">데이터 대기 중...</div>
+          <div id="motor-left-content" class="no-data">데이터 대기 중...</div>
+        </div>
+
+        <!-- 모터 Right 패널 -->
+        <div class="panel" id="motor-right-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="icon motor">R</span>
+              모터 (Right)
+            </div>
+            <div class="panel-timestamp" id="motor-right-timestamp">--</div>
+          </div>
+          <div id="motor-right-content" class="no-data">데이터 대기 중...</div>
         </div>
 
         <!-- 조향 패널 -->
@@ -298,18 +310,17 @@
         return new Date(ts).toLocaleTimeString();
       }
 
-      // 모터 데이터 업데이트
+      // 모터 데이터 업데이트 (Left/Right 구분)
       function updateMotorPanel(data, timestamp) {
-        const content = document.getElementById("motor-content");
-        const timestampEl = document.getElementById("motor-timestamp");
+        const side = data.side === "right" ? "right" : "left";
+        const content = document.getElementById(`motor-${side}-content`);
+        const timestampEl = document.getElementById(`motor-${side}-timestamp`);
+
+        if (!content || !timestampEl) return;
 
         timestampEl.textContent = formatTimestamp(timestamp);
         content.className = "data-grid";
         content.innerHTML = `
-          <div class="data-item">
-            <div class="data-label">SC Pin</div>
-            <div class="data-value">${data.scPin ?? "--"}</div>
-          </div>
           <div class="data-item">
             <div class="data-label">Target Throttle</div>
             <div class="data-value">${data.targetThrottle?.toFixed(1) ?? "--"}<span class="data-unit">%</span></div>
@@ -428,16 +439,23 @@
           // 모니터링 메시지 타입 처리
           if (payload && payload.type === "motor" && payload.data) {
             updateMotorPanel(payload.data, payload.timestamp);
+            const time = formatTimestamp(payload.timestamp);
+            const side = payload.data.side === "right" ? "R" : "L";
+            appendLog(`[${time}] motor(${side}): throttle=${payload.data.targetThrottle}, speed=${payload.data.activeSpeed}, pulse=${payload.data.pulseCount}, pwm=${payload.data.pwmOut}`);
             return;
           }
 
           if (payload && payload.type === "steering" && payload.data) {
             updateSteeringPanel(payload.data, payload.timestamp);
+            const time = formatTimestamp(payload.timestamp);
+            appendLog(`[${time}] steering: current=${payload.data.currentAngle}°, target=${payload.data.targetAngle}°`);
             return;
           }
 
           if (payload && payload.type === "arm" && payload.data) {
             updateArmPanel(payload.data, payload.timestamp);
+            const time = formatTimestamp(payload.timestamp);
+            appendLog(`[${time}] arm: data received`);
             return;
           }
 
