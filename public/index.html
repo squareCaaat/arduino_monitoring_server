@@ -31,12 +31,171 @@
       main {
         padding: 16px 20px 24px;
       }
+
+      /* 모니터링 패널 그리드 */
+      .monitoring-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .panel {
+        background: #151922;
+        border: 1px solid #202534;
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #202534;
+      }
+
+      .panel-title {
+        font-size: 16px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .panel-title .icon {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+      }
+
+      .panel-title .icon.motor { background: #3b82f6; }
+      .panel-title .icon.steering { background: #10b981; }
+      .panel-title .icon.arm { background: #f59e0b; }
+
+      .panel-timestamp {
+        font-size: 11px;
+        color: #6b7280;
+      }
+
+      .data-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .data-item {
+        background: #0b0e14;
+        border-radius: 8px;
+        padding: 12px;
+      }
+
+      .data-label {
+        font-size: 11px;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+      }
+
+      .data-value {
+        font-size: 20px;
+        font-weight: 600;
+        font-family: "SFMono-Regular", Consolas, monospace;
+      }
+
+      .data-unit {
+        font-size: 12px;
+        color: #6b7280;
+        margin-left: 4px;
+      }
+
+      /* ARM 패널 특수 스타일 */
+      .arm-section {
+        margin-bottom: 12px;
+      }
+
+      .arm-section:last-child {
+        margin-bottom: 0;
+      }
+
+      .arm-section-title {
+        font-size: 12px;
+        color: #9ca3af;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+
+      .arm-bar-container {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .arm-bar {
+        flex: 1;
+        height: 8px;
+        background: #1e2433;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+      }
+
+      .arm-bar-current {
+        height: 100%;
+        background: #f59e0b;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+      }
+
+      .arm-bar-target {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        width: 3px;
+        background: #ffffff;
+        border-radius: 2px;
+        transition: left 0.3s ease;
+      }
+
+      .arm-values {
+        font-size: 12px;
+        font-family: "SFMono-Regular", Consolas, monospace;
+        min-width: 80px;
+        text-align: right;
+      }
+
+      .arm-current {
+        color: #f59e0b;
+      }
+
+      .arm-target {
+        color: #6b7280;
+      }
+
+      /* 로그 섹션 */
+      .log-section {
+        margin-top: 20px;
+      }
+
+      .log-header {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 12px;
+        color: #9ca3af;
+      }
+
       .log {
         background: #0b0e14;
         border: 1px solid #1e2433;
         border-radius: 8px;
         padding: 12px;
-        height: 70vh;
+        height: 200px;
         overflow-y: auto;
         white-space: pre-wrap;
         font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
@@ -51,6 +210,14 @@
       .log-line.error {
         color: #ff9d9d;
       }
+
+      /* 데이터 없음 상태 */
+      .no-data {
+        color: #4b5563;
+        font-size: 13px;
+        text-align: center;
+        padding: 20px;
+      }
     </style>
   </head>
   <body>
@@ -59,7 +226,50 @@
       <div id="status" class="status disconnected">disconnected</div>
     </header>
     <main>
-      <div id="log" class="log" aria-live="polite"></div>
+      <!-- 모니터링 패널 그리드 -->
+      <div class="monitoring-grid">
+        <!-- 모터 패널 -->
+        <div class="panel" id="motor-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="icon motor">M</span>
+              모터 모니터링
+            </div>
+            <div class="panel-timestamp" id="motor-timestamp">--</div>
+          </div>
+          <div id="motor-content" class="no-data">데이터 대기 중...</div>
+        </div>
+
+        <!-- 조향 패널 -->
+        <div class="panel" id="steering-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="icon steering">S</span>
+              조향 모니터링
+            </div>
+            <div class="panel-timestamp" id="steering-timestamp">--</div>
+          </div>
+          <div id="steering-content" class="no-data">데이터 대기 중...</div>
+        </div>
+
+        <!-- ARM 패널 -->
+        <div class="panel" id="arm-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <span class="icon arm">A</span>
+              ARM 모니터링
+            </div>
+            <div class="panel-timestamp" id="arm-timestamp">--</div>
+          </div>
+          <div id="arm-content" class="no-data">데이터 대기 중...</div>
+        </div>
+      </div>
+
+      <!-- 로그 섹션 -->
+      <div class="log-section">
+        <div class="log-header">시스템 로그</div>
+        <div id="log" class="log" aria-live="polite"></div>
+      </div>
     </main>
     <script>
       const statusEl = document.getElementById("status");
@@ -76,6 +286,114 @@
         line.textContent = text;
         logEl.appendChild(line);
         logEl.scrollTop = logEl.scrollHeight;
+
+        // 로그 라인 수 제한 (최대 100개)
+        while (logEl.children.length > 100) {
+          logEl.removeChild(logEl.firstChild);
+        }
+      }
+
+      function formatTimestamp(ts) {
+        if (!ts) return "--";
+        return new Date(ts).toLocaleTimeString();
+      }
+
+      // 모터 데이터 업데이트
+      function updateMotorPanel(data, timestamp) {
+        const content = document.getElementById("motor-content");
+        const timestampEl = document.getElementById("motor-timestamp");
+
+        timestampEl.textContent = formatTimestamp(timestamp);
+        content.className = "data-grid";
+        content.innerHTML = `
+          <div class="data-item">
+            <div class="data-label">SC Pin</div>
+            <div class="data-value">${data.scPin ?? "--"}</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Target Throttle</div>
+            <div class="data-value">${data.targetThrottle?.toFixed(1) ?? "--"}<span class="data-unit">%</span></div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Active Speed</div>
+            <div class="data-value">${data.activeSpeed?.toFixed(1) ?? "--"}<span class="data-unit">%</span></div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Pulse Count</div>
+            <div class="data-value">${data.pulseCount ?? "--"}</div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">PWM Out</div>
+            <div class="data-value">${data.pwmOut ?? "--"}</div>
+          </div>
+        `;
+      }
+
+      // 조향 데이터 업데이트
+      function updateSteeringPanel(data, timestamp) {
+        const content = document.getElementById("steering-content");
+        const timestampEl = document.getElementById("steering-timestamp");
+
+        timestampEl.textContent = formatTimestamp(timestamp);
+
+        const diff = (data.targetAngle ?? 0) - (data.currentAngle ?? 0);
+        const diffColor = diff === 0 ? "#10b981" : (Math.abs(diff) > 5 ? "#ef4444" : "#f59e0b");
+
+        content.className = "data-grid";
+        content.innerHTML = `
+          <div class="data-item">
+            <div class="data-label">Current Angle</div>
+            <div class="data-value">${data.currentAngle ?? "--"}<span class="data-unit">°</span></div>
+          </div>
+          <div class="data-item">
+            <div class="data-label">Target Angle</div>
+            <div class="data-value">${data.targetAngle ?? "--"}<span class="data-unit">°</span></div>
+          </div>
+          <div class="data-item" style="grid-column: span 2;">
+            <div class="data-label">Difference</div>
+            <div class="data-value" style="color: ${diffColor}">${diff >= 0 ? "+" : ""}${diff}<span class="data-unit">°</span></div>
+          </div>
+        `;
+      }
+
+      // ARM 섹션 렌더링 헬퍼
+      function renderArmSection(name, label, data) {
+        const current = data?.current ?? 0;
+        const target = data?.target ?? 0;
+        const maxAngle = 180;
+        const currentPercent = Math.min(100, (current / maxAngle) * 100);
+        const targetPercent = Math.min(100, (target / maxAngle) * 100);
+
+        return `
+          <div class="arm-section">
+            <div class="arm-section-title">${label}</div>
+            <div class="arm-bar-container">
+              <div class="arm-bar">
+                <div class="arm-bar-current" style="width: ${currentPercent}%"></div>
+                <div class="arm-bar-target" style="left: calc(${targetPercent}% - 1.5px)"></div>
+              </div>
+              <div class="arm-values">
+                <span class="arm-current">${current}°</span>
+                <span class="arm-target"> / ${target}°</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // ARM 데이터 업데이트
+      function updateArmPanel(data, timestamp) {
+        const content = document.getElementById("arm-content");
+        const timestampEl = document.getElementById("arm-timestamp");
+
+        timestampEl.textContent = formatTimestamp(timestamp);
+        content.className = "";
+        content.innerHTML = `
+          ${renderArmSection("armBottom", "Arm Bottom", data.armBottom)}
+          ${renderArmSection("linkOne", "Link One", data.linkOne)}
+          ${renderArmSection("linkTwo", "Link Two", data.linkTwo)}
+          ${renderArmSection("gripper", "Gripper", data.gripper)}
+        `;
       }
 
       function connect() {
@@ -107,6 +425,23 @@
             return;
           }
 
+          // 모니터링 메시지 타입 처리
+          if (payload && payload.type === "motor" && payload.data) {
+            updateMotorPanel(payload.data, payload.timestamp);
+            return;
+          }
+
+          if (payload && payload.type === "steering" && payload.data) {
+            updateSteeringPanel(payload.data, payload.timestamp);
+            return;
+          }
+
+          if (payload && payload.type === "arm" && payload.data) {
+            updateArmPanel(payload.data, payload.timestamp);
+            return;
+          }
+
+          // 로그 메시지 처리
           if (payload && payload.type === "log") {
             const time = new Date(payload.timestamp).toLocaleTimeString();
             const meta = payload.meta ? ` ${JSON.stringify(payload.meta)}` : "";
