@@ -67,17 +67,32 @@ wss.on("connection", (ws, req) => {
 
   ws.on("message", (data) => {
     const text = data.toString();
-    let isValidJson = true;
+    let parsed = null;
     try {
-      JSON.parse(text);
+      parsed = JSON.parse(text);
     } catch (error) {
-      isValidJson = false;
+      logError("invalid payload", { role, payload: text });
+      return;
     }
 
-    if (isValidJson) {
-      logInfo("message received", { role, payload: text });
+    // 블루투스 연결 상태 처리
+    if (parsed && parsed.type === "bluetooth" && parsed.data) {
+      const connected = parsed.data.connected;
+      if (connected) {
+        logInfo("bluetooth connected", { role });
+      } else {
+        logInfo("bluetooth disconnected", { role });
+      }
+      broadcastToMonitors(parsed);
+      return;
+    }
+
+    // 모니터링 메시지 타입 처리 (motor, steering, arm)
+    if (parsed && ["motor", "steering", "arm"].includes(parsed.type)) {
+      broadcastToMonitors(parsed);
+      logInfo("monitoring data received", { type: parsed.type });
     } else {
-      logError("invalid payload", { role, payload: text });
+      logInfo("message received", { role, payload: text });
     }
   });
 
